@@ -1,22 +1,27 @@
 #!/bin/sh
 set -e
 
-MC_VERSION="${MC_VERSION:-latest}"
+MC_VERSION="${MC_VERSION:-1.21.4}"
 MEMORY="${MEMORY:-5G}"
 PORT="${PORT:-25565}"
-API="https://api.papermc.io/v2/projects/paper"
+UA="paper-docker-bot/1.0 (contact: youremail@example.com)"
+API="https://fill.papermc.io/v3/projects/paper/versions/${MC_VERSION}/builds"
 
 command -v java >/dev/null 2>&1 || { apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless; }
+command -v jq >/dev/null 2>&1 || { apt-get update && apt-get install -y --no-install-recommends jq; }
 
-if [ "$MC_VERSION" = "latest" ]; then
-    MC_VERSION=$(curl -fsSL "$API" | python3 -c "import sys,json;print(json.load(sys.stdin)['versions'][-1])")
+JAR_URL=$(curl -fsSL -H "User-Agent: $UA" "$API" | jq -r 'map(select(.channel=="STABLE")) | sort_by(.build) | last | .downloads."server:default".url')
+
+if [ -z "$JAR_URL" ] || [ "$JAR_URL" = "null" ]; then
+    exit 1
 fi
 
-BUILD=$(curl -fsSL "$API/versions/$MC_VERSION" | python3 -c "import sys,json;print(json.load(sys.stdin)['builds'][-1])")
-JAR_NAME="paper-$MC_VERSION-$BUILD.jar"
+JAR_NAME=$(basename "$JAR_URL")
 
 rm -f paper-*.jar
-curl -fsSL -o "$JAR_NAME" "$API/versions/$MC_VERSION/builds/$BUILD/downloads/$JAR_NAME"
+curl -fsSL -H "User-Agent: $UA" -o "$JAR_NAME" "$JAR_URL"
+
+test -s "$JAR_NAME"
 
 echo "eula=true" > eula.txt
 
