@@ -15,13 +15,16 @@ fi
 BUILD=$(curl -fsSL "$API/versions/$MC_VERSION" | python3 -c "import sys,json;print(json.load(sys.stdin)['builds'][-1])")
 JAR_NAME="paper-$MC_VERSION-$BUILD.jar"
 
-if [ ! -f "$JAR_NAME" ]; then
-    rm -f paper-*.jar
-    curl -fsSL -o "$JAR_NAME" "$API/versions/$MC_VERSION/builds/$BUILD/downloads/$JAR_NAME"
-fi
+rm -f paper-*.jar
+curl -fsSL -o "$JAR_NAME" "$API/versions/$MC_VERSION/builds/$BUILD/downloads/$JAR_NAME"
 
 echo "eula=true" > eula.txt
 
 [ -f server.properties ] || printf 'server-port=%s\nonline-mode=true\n' "$PORT" > server.properties
 
-exec java -Xms"$MEMORY" -Xmx"$MEMORY" -jar "$JAR_NAME" --nogui
+cat > run.sh <<EOF
+#!/bin/sh
+exec java -Xms$MEMORY -Xmx$MEMORY -jar $JAR_NAME --nogui
+EOF
+
+chmod +x run.sh
