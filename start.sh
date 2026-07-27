@@ -2,11 +2,11 @@
 set -e
 
 MC_VERSION="${MC_VERSION:-latest}"
-MEMORY="${MEMORY:-7G}"
+MEMORY="${MEMORY:-1G}"
 PORT="${PORT:-25565}"
 API="https://api.papermc.io/v2/projects/paper"
 
-command -v java >/dev/null 2>&1 || { apt-get update >/dev/null 2>&1 && apt-get install -y --no-install-recommends openjdk-21-jre-headless >/dev/null 2>&1; }
+command -v java >/dev/null 2>&1 || { apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless; }
 
 if [ "$MC_VERSION" = "latest" ]; then
     MC_VERSION=$(curl -fsSL "$API" | python3 -c "import sys,json;print(json.load(sys.stdin)['versions'][-1])")
