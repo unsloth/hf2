@@ -2,7 +2,7 @@
 set -e
 
 MC_VERSION="${MC_VERSION:-latest}"
-MEMORY="${MEMORY:-1G}"
+MEMORY="${MEMORY:-5G}"
 PORT="${PORT:-25565}"
 API="https://api.papermc.io/v2/projects/paper"
 
