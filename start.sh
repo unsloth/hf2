@@ -12,22 +12,25 @@ rm jdk.tar.gz
 export PATH="/app/jdk21/bin:$PATH"
 java -version
 
-echo "== paper version lookup =="
-VJSON=$(curl -fsS https://fill.papermc.io/v3/projects/paper) || { echo "FATAL: version lookup request failed"; exit 1; }
-MCVER=$(echo "$VJSON" | grep -o '"[0-9]*\.[0-9]*\.[0-9]*"' | tail -1 | tr -d '"')
-if [ -z "$MCVER" ]; then echo "FATAL: could not parse mc version. Raw response:"; echo "$VJSON"; exit 1; fi
-echo "mcver=$MCVER"
+echo "== resolving latest vanilla server jar via Mojang manifest =="
+python3 <<'PYEOF'
+import json, urllib.request
 
-echo "== paper build lookup =="
-BJSON=$(curl -fsS "https://fill.papermc.io/v3/projects/paper/versions/${MCVER}/builds") || { echo "FATAL: build lookup request failed"; exit 1; }
-BUILD=$(echo "$BJSON" | grep -o '"id":[0-9]*' | tail -1 | grep -o '[0-9]*')
-if [ -z "$BUILD" ]; then echo "FATAL: could not parse build. Raw response:"; echo "$BJSON"; exit 1; fi
-echo "build=$BUILD"
+manifest = json.load(urllib.request.urlopen("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"))
+latest_id = manifest["latest"]["release"]
+ver_url = next(v["url"] for v in manifest["versions"] if v["id"] == latest_id)
+ver = json.load(urllib.request.urlopen(ver_url))
+server_url = ver["downloads"]["server"]["url"]
+print(f"version={latest_id}")
+print(f"url={server_url}")
+with open("server_url.txt", "w") as f:
+    f.write(server_url)
+PYEOF
 
-echo "== paper jar download =="
-DLURL="https://fill.papermc.io/v3/projects/paper/versions/${MCVER}/builds/${BUILD}/downloads/paper-${MCVER}-${BUILD}.jar"
-echo "url=$DLURL"
-curl -fL -o server.jar "$DLURL"
+SERVER_URL=$(cat server_url.txt)
+if [ -z "$SERVER_URL" ]; then echo "FATAL: no server url resolved"; exit 1; fi
+echo "== downloading server.jar =="
+curl -fL -o server.jar "$SERVER_URL"
 ls -la server.jar
 echo eula=true > eula.txt
 
