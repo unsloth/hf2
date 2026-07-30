@@ -1,38 +1,17 @@
 #!/bin/sh
 set -e
-PORT="${PORT:-7860}"
-pip3 install --break-system-packages --no-cache-dir aiohttp >/dev/null
-cat > server.py <<'PYEOF'
-import asyncio, os, time
-from aiohttp import web, WSMsgType
-
-PORT = int(os.environ.get("PORT", 7860))
-HTML = """<!doctype html>
-<html><body><h1>ok</h1></body></html>
-"""
-
-async def index(request):
-    return web.Response(text=HTML, content_type="text/html")
-
-async def ws_handler(request):
-    ws = web.WebSocketResponse()
-    await ws.prepare(request)
-    async for msg in ws:
-        if msg.type == WSMsgType.TEXT:
-            await ws.send_str(msg.data)
-        elif msg.type == WSMsgType.ERROR:
-            break
-    return ws
-
-app = web.Application()
-app.router.add_get("/", index)
-app.router.add_get("/ws", ws_handler)
-
-if __name__ == "__main__":
-    web.run_app(app, host="0.0.0.0", port=PORT)
-PYEOF
+apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+curl -L -o jdk.tar.gz https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jre/hotspot/normal/eclipse
+mkdir -p jdk21
+tar -xzf jdk.tar.gz -C jdk21 --strip-components=1
+rm jdk.tar.gz
+export PATH="/app/jdk21/bin:$PATH"
+B=$(curl -s https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds | grep -o '"build":[0-9]*' | tail -1 | grep -o '[0-9]*')
+curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/${B}/downloads/paper-1.21.1-${B}.jar"
+echo eula=true > eula.txt
 cat > run.sh <<'EOF'
 #!/bin/sh
-exec python3 server.py
+export PATH="/app/jdk21/bin:$PATH"
+exec java -Xms5G -Xmx5G -jar server.jar --nogui
 EOF
 chmod +x run.sh
