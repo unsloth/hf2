@@ -5,11 +5,11 @@ apt-get update && apt-get install -y --no-install-recommends curl ca-certificate
 echo "== pip =="
 pip3 install --break-system-packages --no-cache-dir aiohttp
 echo "== jdk =="
-curl -fL -o jdk.tar.gz https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jre/hotspot/normal/eclipse
-mkdir -p jdk21
-tar -xzf jdk.tar.gz -C jdk21 --strip-components=1
+curl -fL -o jdk.tar.gz https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jre/hotspot/normal/eclipse
+mkdir -p jdk25
+tar -xzf jdk.tar.gz -C jdk25 --strip-components=1
 rm jdk.tar.gz
-export PATH="/app/jdk21/bin:$PATH"
+export PATH="/app/jdk25/bin:$PATH"
 java -version
 
 echo "== resolving latest vanilla server jar via Mojang manifest =="
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 PYEOF
 cat > run.sh <<'EOF'
 #!/bin/sh
-export PATH="/app/jdk21/bin:$PATH"
+export PATH="/app/jdk25/bin:$PATH"
 exec python3 panel.py
 EOF
 chmod +x run.sh
