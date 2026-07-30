@@ -1,4 +1,5 @@
-#!/bin/sh set -e
+#!/bin/sh
+set -e
 
 PORT="${PORT:-7860}"
 
