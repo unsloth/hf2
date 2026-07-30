@@ -11,14 +11,26 @@ tar -xzf jdk.tar.gz -C jdk21 --strip-components=1
 rm jdk.tar.gz
 export PATH="/app/jdk21/bin:$PATH"
 java -version
+
+echo "== paper version lookup =="
+VJSON=$(curl -fsS https://fill.papermc.io/v3/projects/paper) || { echo "FATAL: version lookup request failed"; exit 1; }
+MCVER=$(echo "$VJSON" | grep -o '"[0-9]*\.[0-9]*\.[0-9]*"' | tail -1 | tr -d '"')
+if [ -z "$MCVER" ]; then echo "FATAL: could not parse mc version. Raw response:"; echo "$VJSON"; exit 1; fi
+echo "mcver=$MCVER"
+
 echo "== paper build lookup =="
-B=$(curl -fs https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds | grep -o '"build":[0-9]*' | tail -1 | grep -o '[0-9]*')
-echo "build=$B"
-if [ -z "$B" ]; then echo "FATAL: empty build number"; exit 1; fi
+BJSON=$(curl -fsS "https://fill.papermc.io/v3/projects/paper/versions/${MCVER}/builds") || { echo "FATAL: build lookup request failed"; exit 1; }
+BUILD=$(echo "$BJSON" | grep -o '"id":[0-9]*' | tail -1 | grep -o '[0-9]*')
+if [ -z "$BUILD" ]; then echo "FATAL: could not parse build. Raw response:"; echo "$BJSON"; exit 1; fi
+echo "build=$BUILD"
+
 echo "== paper jar download =="
-curl -fL -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/${B}/downloads/paper-1.21.1-${B}.jar"
+DLURL="https://fill.papermc.io/v3/projects/paper/versions/${MCVER}/builds/${BUILD}/downloads/paper-${MCVER}-${BUILD}.jar"
+echo "url=$DLURL"
+curl -fL -o server.jar "$DLURL"
 ls -la server.jar
 echo eula=true > eula.txt
+
 echo "== writing panel.py =="
 cat > panel.py <<'PYEOF'
 import os, subprocess, threading, collections
