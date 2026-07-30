@@ -1,16 +1,25 @@
 #!/bin/sh
 set -e
+echo "== apt =="
 apt-get update && apt-get install -y --no-install-recommends curl ca-certificates python3 python3-pip
-pip3 install --break-system-packages --no-cache-dir aiohttp >/dev/null
+echo "== pip =="
+pip3 install --break-system-packages --no-cache-dir aiohttp
+echo "== jdk =="
 curl -fL -o jdk.tar.gz https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jre/hotspot/normal/eclipse
 mkdir -p jdk21
 tar -xzf jdk.tar.gz -C jdk21 --strip-components=1
 rm jdk.tar.gz
 export PATH="/app/jdk21/bin:$PATH"
+java -version
+echo "== paper build lookup =="
 B=$(curl -fs https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds | grep -o '"build":[0-9]*' | tail -1 | grep -o '[0-9]*')
-if [ -z "$B" ]; then echo "FATAL: could not resolve paper build number" >&2; exit 1; fi
+echo "build=$B"
+if [ -z "$B" ]; then echo "FATAL: empty build number"; exit 1; fi
+echo "== paper jar download =="
 curl -fL -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/${B}/downloads/paper-1.21.1-${B}.jar"
+ls -la server.jar
 echo eula=true > eula.txt
+echo "== writing panel.py =="
 cat > panel.py <<'PYEOF'
 import os, subprocess, threading, collections
 from aiohttp import web
@@ -118,3 +127,4 @@ export PATH="/app/jdk21/bin:$PATH"
 exec python3 panel.py
 EOF
 chmod +x run.sh
+echo "== start.sh complete =="
